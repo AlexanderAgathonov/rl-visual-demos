@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Обучение с подкреплением: интерактивные демонстрации</title>
+<meta name="description" content="Интерактивные демонстрации основ обучения с подкреплением: бусинки, сетчатый мир, Q-таблица, лабиринт, змейка, динозаврик, гонки, лунный модуль. Работают в браузере, без установки и без сети.">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="hub-head">
+    <p class="kicker">Обучение с подкреплением · материалы к статье</p>
+    <h1>Учим компьютер играть: интерактивные демонстрации</h1>
+    <p>Девять небольших демонстраций, в которых обучение идёт прямо в браузере: от бусинок и таблицы до нейросетей. Ничего устанавливать не нужно, интернет после загрузки страницы не требуется.</p>
+  </header>
+
+  <nav class="tabs" id="tabs" aria-label="Демонстрации"></nav>
+
+  <section class="desc" aria-live="polite">
+    <h2 id="d-title"></h2>
+    <p class="sub" id="d-sub"></p>
+    <p class="note" id="d-note"></p>
+  </section>
+
+  <main class="stage" id="stage"></main>
+
+  <p class="hint"><b>Кнопки под полем.</b> «Обучение: обычное / ускоренное» меняет скорость; «Сброс» начинает с нуля; «Веса» загружает готовую модель или позволяет сохранить свою; «О игре» (или «О демо») – подробное описание наград, сети и параметров. Переключение демонстраций – вкладки сверху или стрелки ← → на клавиатуре.</p>
+
+  <footer class="hub-foot">
+    <div>© А. А. Агафонов, Казанский (Приволжский) федеральный университет, 2026. Код – лицензия MIT; тексты и иллюстрации – CC BY 4.0.</div>
+    <div>Материалы подготовлены к IV Международной научно-практической конференции «Физико-математическое образование: традиции, инновации, перспективы» (Минск, 19–20 ноября 2026 г.).</div>
+  </footer>
+</div>
+
+<div id="demo-hold">
+<div id="demo-snake-dqn" class="demo-root" data-demo-key="snake-dqn">
+<div id="snake-dqn-page" class="eng-root eng-page" data-demo="snake-dqn">
+  <h1>Змейка · <span class="accent">нейросеть</span> вместо таблицы</h1>
+  <p class="subtitle">7 непрерывных чисел → сеть 7 → 16 → 3 · Double DQN + Adam · продолжение «Змейки с таблицей»</p>
+
+  <div id="snake-dqn-stats" class="eng-stats"></div>
+
+  <div class="eng-row">
+    <div class="eng-cell">
+      <div class="eng-label">Игра: змейка ест яблоки</div>
+      <div class="eng-canvas-wrap"><canvas id="snake-dqn-game"></canvas></div>
+    </div>
+    <div class="eng-cell">
+      <div class="eng-label">Нейросеть: 7 чисел про мир → 3 поворота</div>
+      <div class="eng-canvas-wrap"><canvas id="snake-dqn-net"></canvas></div>
+    </div>
+  </div>
+
+  <div class="eng-curve-wrap">
+    <div class="eng-label">Кривая обучения</div>
+    <canvas id="snake-dqn-curve"></canvas>
+  </div>
+
+  <div class="eng-controls">
+    <button id="snake-dqn-modeBtn" class="eng-btn">Обучение: обычное</button>
+    <button id="snake-dqn-resetBtn" class="eng-btn">Сброс</button>
+    <button id="snake-dqn-weightsBtn" class="eng-btn">Веса</button>
+    <button id="snake-dqn-infoBtn" class="eng-btn eng-btn-ghost eng-info-btn">О игре</button>
+  </div>
+
+  <p class="eng-note">Та же змейка, что и в демо с таблицей — но вместо 32 ситуаций и 96 чисел в памяти
+     агент смотрит на поле семью непрерывными числами и пропускает их через маленькую нейросеть.
+     Подробности — в кнопке «О игре».</p>
+
+  <div id="snake-dqn-introOverlay" class="eng-intro-overlay">
+    <canvas id="snake-dqn-introCanvas" width="720" height="480"></canvas>
+  </div>
+</div>
+
+<div id="snake-dqn-modalOverlay" class="eng-modal-overlay">
+  <div class="eng-modal-box">
+    <button id="snake-dqn-modalClose" class="eng-modal-close" aria-label="Закрыть">&times;</button>
+    <h2>Змейка · нейросеть вместо таблицы</h2>
+
+    <h3>От таблицы к сети</h3>
+    <p>В демо «Змейка с таблицей» ситуация — это 3 бита опасности и 1 из 4 секторов еды: всего 32 варианта,
+       и для каждого можно честно выучить и хранить число. Здесь же направление на еду и её близость —
+       непрерывные величины, вариантов бесконечно много, и табличкой их не перечислить. Вместо таблицы —
+       нейросеть: она сама обобщает похожие ситуации, даже те, которые ни разу не встречались буквально.</p>
+
+    <h3>Игра</h3>
+    <p>Поле 20×20. Змейка ест яблоки и растёт. Эпизод заканчивается столкновением
+       со стеной или собственным телом, а также при лимите шагов без еды.</p>
+
+    <h3>Состояние: 7 чисел</h3>
+    <ul>
+      <li><b>Опасность (3 числа)</b>: вперёд / слева / справа — луч до 6 клеток,
+          значение 1/расстояние (0, если препятствий рядом нет).</li>
+      <li><b>Направление на еду (2 числа)</b>: cos и sin единичного вектора «голова → еда»
+          в системе координат головы (ось «вперёд» и ось «вправо»).</li>
+      <li><b>Близость еды (1 число)</b>: 1 / (1 + манхэттенское расстояние).</li>
+      <li><b>Голод (1 число)</b>: доля шагов без еды от лимита в 100 шагов.</li>
+    </ul>
+
+    <h3>Сеть: 7 → 16 (tanh) → 3</h3>
+    <p>Скрытый слой из 16 нейронов с tanh-активацией, дальше — линейный слой на 3 выхода:
+       ценность (Q) ходов «налево», «прямо», «направо». Выбирается ход с наибольшей ценностью,
+       либо, с вероятностью ε, случайный — чтобы змейка продолжала пробовать новое.</p>
+
+    <h3>Награды</h3>
+    <ul>
+      <li>яблоко: <b>+1</b></li>
+      <li>смерть: <b>−10</b></li>
+      <li>шаг: <b>−0.005</b></li>
+      <li>приближение к еде: до <b>+0.2</b>, удаление: до <b>−0.2</b></li>
+      <li>γ = 0.97</li>
+    </ul>
+
+    <h3>Обучение: Double DQN + Adam</h3>
+    <p>Сеть учится по случайным партиям из памяти прошлых шагов (буфер на 10 000 записей),
+       склеенным в трёхшаговые цепочки (n-step), — это ускоряет распространение награды назад
+       по шагам. Цель для обучения берётся сразу с двух копий сети: «главная» выбирает лучший ход,
+       «целевая» (медленно обновляемая копия) оценивает его ценность — так меньше риск переоценить
+       собственные ошибки. Веса обновляются Adam-оптимизатором, ε уменьшается от 0.5 до 0.05.</p>
+
+    <button id="snake-dqn-modalOk" class="eng-modal-ok">Понятно</button>
+  </div>
+</div>
+</div>
+<div id="demo-dino" class="demo-root" data-demo-key="dino">
+<div id="dino-page" class="eng-root eng-page" data-demo="dino">
+  <h1>Динозаврик · <span class="accent">PPO</span></h1>
+  <p class="subtitle">8 чисел → актёр-критик 8→16→(3 + 1) · PPO · 3 действия · 4 стадии сложности</p>
+
+  <div id="dino-stats" class="eng-stats"></div>
+
+  <div class="eng-row">
+    <div class="eng-cell">
+      <div class="eng-label">Игра: перепрыгнуть препятствия</div>
+      <div class="eng-canvas-wrap"><canvas id="dino-game"></canvas></div>
+    </div>
+    <div class="eng-cell">
+      <div class="eng-label">Нейросеть: 8 чисел → прыжок, присед или ничего</div>
+      <div class="eng-canvas-wrap"><canvas id="dino-net"></canvas></div>
+    </div>
+  </div>
+
+  <div class="eng-curve-wrap">
+    <div class="eng-label">Кривая обучения</div>
+    <canvas id="dino-curve"></canvas>
+  </div>
+
+  <div class="eng-controls">
+    <button id="dino-speedBtn" class="eng-btn">Обучение: обычное</button>
+    <button id="dino-resetBtn" class="eng-btn">Сброс</button>
+    <button id="dino-weightsBtn" class="eng-btn">Веса</button>
+    <button id="dino-infoBtn" class="eng-btn eng-btn-ghost eng-info-btn">О игре</button>
+  </div>
+
+  <p class="eng-note">PPO (Proximal Policy Optimization) на общем стволе 8 → 16: одна голова выбирает
+     действие, другая оценивает ценность состояния. Обучение идёт пачками — по 512 шагов сразу,
+     а не по одному, как в Q-обучении. Подробности — в кнопке «О игре».</p>
+
+  <div id="dino-introOverlay" class="eng-intro-overlay">
+    <canvas id="dino-introCanvas" width="720" height="480"></canvas>
+  </div>
+</div>
+
+<div id="dino-modalOverlay" class="eng-modal-overlay">
+  <div class="eng-modal-box">
+    <button id="dino-modalClose" class="eng-modal-close" aria-label="Закрыть">&times;</button>
+    <h2>Динозаврик · PPO (Proximal Policy Optimization)</h2>
+
+    <h3>Мир</h3>
+    <p>Бесконечный раннер. Кактусы и птеродактили летят справа налево со скоростью,
+       зависящей от стадии. Динозаврик бежит по земле, прыгает и приседает.
+       Касание препятствия — конец эпизода.</p>
+
+    <h3>Что видит агент — 8 чисел</h3>
+    <ul>
+      <li>время до ближайшего препятствия</li>
+      <li>ширина блока препятствий (нормирована на 240 px)</li>
+      <li>высота препятствия</li>
+      <li>текущая скорость мира</li>
+      <li>динозаврик на земле (0/1)</li>
+      <li>просвет под препятствием (для птиц)</li>
+      <li>высота динозаврика над землёй</li>
+      <li>вертикальная скорость динозаврика</li>
+    </ul>
+
+    <h3>Действия — 3</h3>
+    <p>ничего · прыжок · присед. Прыжок запрещён в воздухе и под низколетящими
+       птицами (маска действия). Присед доступен со стадии 3.</p>
+
+    <h3>Сеть — актёр-критик</h3>
+    <p>Общий ствол <code>8 → 16 (tanh)</code>. Две головы: политика
+       <code>16 → 3 (linear)</code> выдаёт логиты, ценность <code>16 → 1 (linear)</code>
+       выдаёт <code>V(s)</code>. Действие сэмплируется из masked softmax.</p>
+
+    <h3>PPO — ключевые идеи</h3>
+    <ul>
+      <li>Rollout 512 шагов → GAE(λ = 0.95) → 4 эпохи по минибатчам 64.</li>
+      <li>Клиппированная суррогатная цель: <code>ratio · A</code> обрезается в
+          <code>[1 − ε, 1 + ε]</code>, ε = 0.2.</li>
+      <li>Value loss с коэффициентом 0.5, энтропийный бонус 0.01.</li>
+      <li>Глобальный клиппинг градиента по норме 0.5.</li>
+      <li>γ = 0.99, отдельный LR на стадию с «boost» после сброса или провала.</li>
+      <li>Откаты к лучшей политике: до 5 раз за стадию.</li>
+    </ul>
+
+    <h3>Награды</h3>
+    <ul>
+      <li>каждый шаг: <b>+0.02</b></li>
+      <li>прошёл препятствие: <b>+1.0</b></li>
+      <li>удар: <b>−10.0</b></li>
+      <li>shaping: разовый бонус за прыжок / присед в правильном окне (±0.5 / −0.2)</li>
+    </ul>
+
+    <h3>Стадии</h3>
+    <ul>
+      <li>1: скорость 5 · только кактусы</li>
+      <li>2: скорость 9 · кактусы</li>
+      <li>3: скорость 12 · кактусы + птицы + присед</li>
+      <li>4: скорость 12 · кластеры кактусов и комбо с птицами</li>
+    </ul>
+    <p>Переход стадии — когда 80 % последних оценочных эпизодов проходят «потолок»
+       стадии по награде.</p>
+
+    <button id="dino-modalOk" class="eng-modal-ok">Понятно</button>
+  </div>
+</div>
+</div>
+<div id="demo-racing" class="demo-root" data-demo-key="racing">
+<div id="racing-page" class="eng-root eng-page" data-demo="racing">
+  <h1>Racing · <span class="accent">обучение с подкреплением</span></h1>
+  <p class="subtitle">5 лидаров → сеть 5→4→3→2 · 2 действия · случайное кольцо-змейка</p>
+
+  <div id="racing-stats" class="eng-stats"></div>
+
+  <div class="eng-row">
+    <div class="eng-cell">
+      <div class="eng-label">Игра: проехать трассу (камера следует за машиной)</div>
+      <div class="eng-canvas-wrap"><canvas id="racing-game"></canvas></div>
+    </div>
+    <div class="eng-cell">
+      <div class="eng-label">Нейросеть: 5 лучей лидара → поворот и газ</div>
+      <div class="eng-canvas-wrap"><canvas id="racing-net"></canvas></div>
+    </div>
+  </div>
+
+  <div class="eng-curve-wrap">
+    <div class="eng-label">Кривая обучения</div>
+    <canvas id="racing-curve"></canvas>
+  </div>
+
+  <div class="eng-controls">
+    <button id="racing-speedBtn" class="eng-btn">Обучение: обычное</button>
+    <button id="racing-resetBtn" class="eng-btn">Сброс</button>
+    <button id="racing-weightsBtn" class="eng-btn">Веса</button>
+    <button id="racing-infoBtn" class="eng-btn eng-btn-ghost eng-info-btn">О игре</button>
+  </div>
+
+  <p class="eng-note">REINFORCE на сети 5 → 4 → 3 → 2: пять лидаров → руль и газ/тормоз. Трасса генерируется
+     заново после каждого освоенного круга — веса переносятся, исследование получает всплеск. Подробности —
+     в кнопке «О игре».</p>
+
+  <div id="racing-introOverlay" class="eng-intro-overlay">
+    <canvas id="racing-introCanvas" width="720" height="480"></canvas>
+  </div>
+</div>
+
+<div id="racing-modalOverlay" class="eng-modal-overlay">
+  <div class="eng-modal-box">
+    <button id="racing-modalClose" class="eng-modal-close" aria-label="Закрыть">&times;</button>
+    <h2>Racing · гонка по трассе</h2>
+
+    <h3>Мир и трасса</h3>
+    <p>Замкнутое «кольцо-змейка» генерируется процедурно. Новая трасса появляется автоматически, когда
+       предыдущая «освоена»: пройден полный круг, либо эпизод дожил до конца без аварий с дистанцией
+       ≥ 50% длины трассы, либо после 300 эпизодов без успеха. Веса при смене трассы сохраняются (перенос
+       навыка), а σ получает всплеск исследования — как стадии у лунного модуля. Камера следует за машиной
+       с опережением по курсу и зумом от скорости; в углу — мини-карта.</p>
+
+    <h3>Что видит машинка — 5 чисел</h3>
+    <ul>
+      <li>лидар «лев-лев» (−0.9 рад)</li>
+      <li>лидар «левее» (−0.45 рад)</li>
+      <li>лидар «прямо»</li>
+      <li>лидар «правее» (+0.45 рад)</li>
+      <li>лидар «прав-прав» (+0.9 рад)</li>
+    </ul>
+    <p>Каждый луч — расстояние до ближайшей стены, нормированное на дальность 110: 0 — стена вплотную,
+       1 — стена далеко. Точки попаданий помечаются крестиками на стенах.</p>
+
+    <h3>Действия — 2</h3>
+    <p>Руль (−1…+1) — поворот корпуса до ±0.09 рад за шаг · газ/тормоз (−1…+1) — скорость от 0.8 до 3.5.</p>
+
+    <h3>Награды</h3>
+    <ul>
+      <li>продвижение вдоль трассы × скоростной коэффициент (0.6…1.4)</li>
+      <li>столкновение со стеной: <b>−10</b></li>
+      <li>лимит эпизода: 900 шагов — засчитывается пройденная дистанция</li>
+    </ul>
+
+    <h3>Обучение</h3>
+    <p>REINFORCE + SGD. Сеть 5 → 4 (tanh) → 3 (tanh) → 2 (tanh): выходы — средние значения двух непрерывных
+       действий. Исследование — гауссов шум σ: старт 0.35, затухание ×0.995 за эпизод, минимум 0.12; всплеск
+       до 0.22 при смене трассы. Возвраты нормируются внутри эпизода, преимущество обрезается ±5. γ = 0.99 —
+       ценность будущих наград.</p>
+
+    <h3>Управление</h3>
+    <p>«Обучение: обычное / ускоренное» — скорость симуляции. «Сброс» — новые веса и новая трасса.
+       «Веса» — экспорт и импорт JSON. Перед стартом — ролик (~31 секунда), клик — пропустить.</p>
+
+    <button id="racing-modalOk" class="eng-modal-ok">Понятно</button>
+  </div>
+</div>
+</div>
+<div id="demo-lander" class="demo-root" data-demo-key="lander">
+<div id="lander-page" class="eng-root eng-page" data-demo="lander">
+  <h1>Лунный модуль · <span class="accent">обучение с подкреплением</span></h1>
+  <p class="subtitle">8 чисел → сеть 8→32→4 · 4 действия · 3 стадии сложности</p>
+
+  <div id="lander-stats" class="eng-stats"></div>
+
+  <div class="eng-row">
+    <div class="eng-cell">
+      <div class="eng-label">Игра: посадить модуль на площадку</div>
+      <div class="eng-canvas-wrap"><canvas id="lander-game"></canvas></div>
+    </div>
+    <div class="eng-cell">
+      <div class="eng-label">Нейросеть: 8 чисел о модуле → 4 команды двигателям</div>
+      <div class="eng-canvas-wrap"><canvas id="lander-net"></canvas></div>
+    </div>
+  </div>
+
+  <div class="eng-curve-wrap">
+    <div class="eng-label">Кривая обучения</div>
+    <canvas id="lander-curve"></canvas>
+  </div>
+
+  <div class="eng-controls">
+    <button id="lander-speedBtn" class="eng-btn">Обучение: обычное</button>
+    <button id="lander-resetBtn" class="eng-btn">Сброс</button>
+    <button id="lander-weightsBtn" class="eng-btn">Веса</button>
+    <button id="lander-infoBtn" class="eng-btn eng-btn-ghost eng-info-btn">О игре</button>
+  </div>
+
+  <p class="eng-note">Double DQN на сети 8 → 32 → 4: 8 чисел о положении и скорости модуля → оценка
+     четырёх действий. Три стадии сложности растут по мере успешных посадок. Подробности — в кнопке «О игре».</p>
+
+  <div id="lander-introOverlay" class="eng-intro-overlay">
+    <canvas id="lander-introCanvas" width="720" height="480"></canvas>
+  </div>
+</div>
+
+<div id="lander-modalOverlay" class="eng-modal-overlay">
+  <div class="eng-modal-box">
+    <button id="lander-modalClose" class="eng-modal-close" aria-label="Закрыть">&times;</button>
+    <h2>Лунный модуль · посадка на площадку</h2>
+
+    <h3>Мир и физика</h3>
+    <p>Поле 40×40 м. Гравитация −12 м/с². Главный двигатель даёт +26 м/с² вдоль
+       оси корпуса, боковые сопла наклоняют корпус (±5 рад/с²) и слегка сдвигают вбок.
+       Ветер сносит модуль (на стадиях 2–3). Грунт — рваный рельеф, между двумя флажками —
+       плоская посадочная площадка.</p>
+
+    <h3>Что видит модуль — 8 чисел</h3>
+    <ul>
+      <li>смещение до площадки по X</li>
+      <li>высота над площадкой</li>
+      <li>радар: высота до грунта под ногами</li>
+      <li>скорость по X · скорость по Y</li>
+      <li>наклон корпуса · скорость вращения</li>
+      <li>ветер</li>
+    </ul>
+
+    <h3>Действия — 4</h3>
+    <p>Двигатели выключены · главный двигатель · левое сопло (наклон влево) ·
+       правое сопло (наклон вправо).</p>
+
+    <h3>Успешная посадка</h3>
+    <p>Касание площадки ногами при: |V<sub>верт</sub>| ≤ 4 м/с, |V<sub>гор</sub>| ≤ 3.0 м/с,
+       |наклон| ≤ 20°, |вращение| ≤ 2.0 рад/с. Иначе — авария.</p>
+
+    <h3>Награды</h3>
+    <ul>
+      <li>мягкая посадка: <b>+100</b> + до +30 за мягкость + до +10 за центр</li>
+      <li>авария: <b>−100</b> · выход за край: <b>−30</b> · таймаут: <b>−25</b></li>
+      <li>завершение эпизода близко к площадке: до <b>+12</b> (учит «висеть над площадкой»)</li>
+      <li>каждый шаг: <b>−0.02</b>; главный двигатель: <b>−0.12</b>; сопла: <b>−0.04</b></li>
+      <li>в «воротах» (над площадкой ниже 8 м): плавное снижение <b>+0.2</b>/шаг,
+          висение <b>−0.15</b>/шаг</li>
+      <li>формирование награды на каждом шаге: приближение к площадке,
+          гашение скорости и вращения (усиленное, ×25)</li>
+      <li>γ = 0.99 — ценность будущих наград</li>
+    </ul>
+
+    <h3>Обучение</h3>
+    <p>Double DQN + n-step(3) + replay 20 000 + Adam. Сеть 8 → 32 (tanh) → 4 (linear):
+       выходы — оценки четырёх действий. Исследование ε живёт по эпизодам
+       (ε = max(0.05, 1 − эпизод/1200)) плюс всплеск 0.30 на старте каждой стадии,
+       поэтому сеть успевает увидеть посадки, прежде чем начать жадничать.</p>
+
+    <h3>Стадии сложности</h3>
+    <ul>
+      <li>1: без ветра, широкая площадка (10 м), старт низко над площадкой</li>
+      <li>2: ветер ±0.5, площадка 8 м, старт в случайном месте</li>
+      <li>3: ветер ±1.0, узкая площадка (6 м), рельеф злее</li>
+    </ul>
+    <p>Переход вверх — когда жадные проверочные эпизоды садятся в 75% случаев.</p>
+
+    <h3>Управление</h3>
+    <p>«Обучение: обычное / ускоренное» — скорость симуляции. Перед стартом — ролик
+       (~26 секунд), клик — пропустить.</p>
+
+    <button id="lander-modalOk" class="eng-modal-ok">Понятно</button>
+  </div>
+</div>
+</div>
+<div id="demo-sama" class="demo-root" data-demo-key="sama">
+<div id="sama-page" class="eng-root eng-page" data-demo="sama">
+  <h1>САМА · <span class="accent">самообучающаяся машина</span></h1>
+  <p class="subtitle">19 коробков · цветные бусинки · белые ходят первыми · агент играет чёрными вторым</p>
+
+  <div id="sama-stats" class="eng-stats"></div>
+
+  <div class="eng-row">
+    <div class="eng-cell">
+      <div class="eng-label">Игра: чёрные — САМА, белые — случайный соперник</div>
+      <div class="eng-canvas-wrap"><canvas id="sama-game"></canvas></div>
+    </div>
+    <div class="eng-cell">
+      <div class="eng-label">Память САМА: бусинки в 19 коробках</div>
+      <div class="eng-canvas-wrap"><canvas id="sama-memory"></canvas></div>
+    </div>
+  </div>
+
+  <div class="eng-curve-wrap">
+    <div class="eng-label">Кривая обучения</div>
+    <canvas id="sama-curve"></canvas>
+  </div>
+
+  <div class="eng-controls">
+    <button id="sama-modeBtn" class="eng-btn">Обучение: обычное</button>
+    <button id="sama-resetBtn" class="eng-btn">Сброс</button>
+    <button id="sama-weightsBtn" class="eng-btn">Веса</button>
+    <button id="sama-infoBtn" class="eng-btn eng-btn-ghost eng-info-btn">О игре</button>
+  </div>
+
+  <p class="eng-note">Метод проб и ошибок без единой нейросети: агент вытягивает бусинку вслепую из коробка,
+     соответствующего игровой ситуации. Проиграл — бусинки его ходов исчезают. Подробности — в кнопке «О игре».</p>
+
+  <div id="sama-introOverlay" class="eng-intro-overlay">
+    <canvas id="sama-introCanvas" width="720" height="480"></canvas>
+  </div>
+</div>
+
+<div id="sama-modalOverlay" class="eng-modal-overlay">
+  <div class="eng-modal-box">
+    <button id="sama-modalClose" class="eng-modal-close" aria-label="Закрыть">&times;</button>
+    <h2>САМА · самообучающаяся машина</h2>
+
+    <h3>Игра</h3>
+    <p>Доска 3×3, шесть пешек. Белые — автоматический соперник — ходят первыми и идут вверх.
+       Чёрные — обучающийся агент — ходят вторыми и идут вниз. Пешка бьёт по диагонали, ходит вперёд
+       на свободную клетку. Победа — если у соперника не осталось пешек, ходов или его пешка дошла до
+       дальнего края.</p>
+
+    <h3>Память агента · 19 коробков</h3>
+    <p>19 коробков — это все игровые ситуации (с точностью до зеркальной симметрии доски), в которых
+       ходят чёрные. Внутри коробка — цветные бусинки. Каждый цвет означает один из возможных ходов
+       агента из этой ситуации.</p>
+
+    <h3>Выбор хода</h3>
+    <p>Агент вытягивает бусинку вслепую из текущего коробка. Какой цвет выпал — такой ход агент
+       и делает. Если бусинок у хода не осталось — выбор идёт среди оставшихся цветов.</p>
+
+    <h3>Обучение</h3>
+    <p>Если агент проигрывает, бусинки всех его ходов за эту партию исчезают — коробки «забывают»
+       неудачную линию игры. Если выигрывает — бусинки остаются на месте: удачные ходы никак не
+       поощряются, просто не наказываются. Если бусинок хода не осталось совсем, такой ход больше
+       не выбирается. По итогу партии поле игры также вспыхивает рамкой: акцентной — при победе,
+       тёмной — при поражении. Метод восходит к MENACE Дональда Мичи (1961) — без единой микросхемы.</p>
+
+    <h3>Управление</h3>
+    <p>«Обучение: обычное / ускоренное» — скорость партий. «Сброс» — исходная память агента (по
+       3 бусинки на ход). «Веса» — экспорт и импорт текущего состояния бусинок в формате JSON.
+       Перед стартом — короткий ролик, клик — пропустить.</p>
+
+    <button id="sama-modalOk" class="eng-modal-ok">Понятно</button>
+  </div>
+</div>
+</div>
+<div id="demo-treasures" class="demo-root" data-demo-key="treasures">
+<div id="treasures-page" class="eng-root eng-page" data-demo="treasures">
+  <h1>Вернись с <span class="accent">сокровищами</span></h1>
+  <p class="subtitle">8×8 · 3 сокровища +10 · дом +50 · ловушка −5 · стена −1 · шаг −0.1 · динамические стены · до 80 ходов</p>
+
+  <div id="treasures-stats" class="eng-stats"></div>
+
+  <div class="eng-row">
+    <div class="eng-cell">
+      <div class="eng-label">Игра: собрать сокровища и вернуться домой</div>
+      <div class="eng-canvas-wrap"><canvas id="treasures-game"></canvas></div>
+    </div>
+    <div class="eng-cell">
+      <div class="eng-label">Таблица: ценность клеток и лучшие ходы</div>
+      <div class="eng-canvas-wrap"><canvas id="treasures-net"></canvas></div>
+    </div>
+  </div>
+
+  <div class="eng-curve-wrap">
+    <div class="eng-label">Кривая обучения</div>
+    <canvas id="treasures-curve"></canvas>
+  </div>
+
+  <div class="eng-controls">
+    <button id="treasures-speedBtn" class="eng-btn">Обучение: обычное</button>
+    <button id="treasures-resetBtn" class="eng-btn">Сброс</button>
+    <button id="treasures-weightsBtn" class="eng-btn">Веса</button>
+    <button id="treasures-infoBtn" class="eng-btn eng-btn-ghost eng-info-btn">О игре</button>
+  </div>
+
+  <p class="eng-note">Состояние = позиция + маска собранных сокровищ (3 бита) — 512 состояний × 4 действия.
+     Стены иногда появляются и исчезают сами: агенту приходится и запоминать выученное, и проверять его на ходу.
+     Подробности — в кнопке «О игре».</p>
+
+  <div id="treasures-introOverlay" class="eng-intro-overlay">
+    <canvas id="treasures-introCanvas" width="720" height="480"></canvas>
+  </div>
+</div>
+
+<div id="treasures-modalOverlay" class="eng-modal-overlay">
+  <div class="eng-modal-box">
+    <button id="treasures-modalClose" class="eng-modal-close" aria-label="Закрыть">&times;</button>
+    <h2>Вернись с сокровищами</h2>
+    <h3>Игра</h3>
+    <p>Карта 8×8, агент стартует в левом верхнем углу. На карте 3 сокровища, 3 ловушки и стены.
+       Часть клеток — динамические стены: могут случайно появляться и исчезать. Цель — собрать все
+       сокровища и вернуться домой не позже чем за 80 ходов.</p>
+    <h3>Состояние</h3>
+    <p>Позиция агента + маска собранных сокровищ (3 бита, 8 масок). Итого до 64 × 8 =
+       <b>512 состояний</b> × 4 действия.</p>
+    <h3>Правая панель</h3>
+    <p>Карта ценности для текущей маски: оттенок = ценность, стрелка = политика. Числа в клетках
+       опущены, кроме особых: стена = <code>0</code> на чёрном, ловушка = <code>−5</code>, сокровище =
+       ценность состояния «сразу после сбора», дом при полной маске = <code>+50</code>. Клетка агента —
+       чёрная рамка. Бары справа — Q четырёх действий текущего состояния; ниже — TD-разбор с числами.</p>
+    <h3>Награды</h3>
+    <ul>
+      <li>сокровище: <b>+10</b></li>
+      <li>возврат домой: <b>+50</b></li>
+      <li>ловушка: <b>−5</b></li>
+      <li>стена: <b>−1</b></li>
+      <li>каждый ход: <b>−0.1</b></li>
+      <li>приближение к цели: до <b>+0.3</b>, удаление: до <b>−0.3</b></li>
+      <li>γ = 0.95, α = 0.20</li>
+    </ul>
+    <h3>Обучение</h3>
+    <p>Q-обучение с ε-жадной стратегией (ε: 1.0 → 0.05). Случайные ходы выбираются только среди
+       допустимых. Ускоренный режим считает шаги пачками по бюджету времени на кадр, а не по таймеру —
+       иначе с 512 состояниями обучение шло бы слишком медленно.</p>
+    <button id="treasures-modalOk" class="eng-modal-ok">Понятно</button>
+  </div>
+</div>
+</div>
+<div id="demo-explore" class="demo-root" data-demo-key="explore">
+<div id="explore-page" class="eng-root eng-page" data-demo="explore">
+  <h1>Жадность или <span class="accent">дальний расчёт</span>?</h1>
+  <p class="subtitle">6×5 · 7 маленьких сокровищ +1 · большое +10 за стеной · ловушка −5 · 12 ходов на эпизод</p>
+
+  <div id="explore-stats" class="eng-stats"></div>
+
+  <div class="eng-row">
+    <div class="eng-cell">
+      <div class="eng-label">Игра: 12 ходов — что успеть собрать?</div>
+      <div class="eng-canvas-wrap"><canvas id="explore-game"></canvas></div>
+    </div>
+    <div class="eng-cell">
+      <div class="eng-label">Таблица режима: ценность клеток и лучшие ходы</div>
+      <div class="eng-canvas-wrap"><canvas id="explore-net"></canvas></div>
+    </div>
+  </div>
+
+  <div class="eng-curve-wrap">
+    <div class="eng-label">Награда за эпизод — текущий режим</div>
+    <canvas id="explore-curve"></canvas>
+  </div>
+
+  <div class="eng-controls">
+    <button id="explore-speedBtn" class="eng-btn">Обучение: обычное</button>
+    <button id="explore-strategyBtn" class="eng-btn">Режим: Жадность (рядом)</button>
+    <button id="explore-resetBtn" class="eng-btn">Сброс</button>
+    <button id="explore-weightsBtn" class="eng-btn">Веса</button>
+    <button id="explore-infoBtn" class="eng-btn eng-btn-ghost eng-info-btn">О демо</button>
+  </div>
+
+  <p class="eng-note">Одна и та же карта, одна и та же формула обучения — Q-обучение. У каждого режима своя таблица Q
+     и своя кривая обучения: «Жадность» закрепляет обход 7 близких сокровищ, «Дальний расчёт» ведёт агента в обход
+     стены — к большому, минуя ловушку. Подробности — в кнопке «О демо».</p>
+
+  <div id="explore-introOverlay" class="eng-intro-overlay">
+    <canvas id="explore-introCanvas" width="720" height="480"></canvas>
+  </div>
+</div>
+
+<div id="explore-modalOverlay" class="eng-modal-overlay">
+  <div class="eng-modal-box">
+    <button id="explore-modalClose" class="eng-modal-close" aria-label="Закрыть">&times;</button>
+    <h2>Жадность или дальний расчёт</h2>
+    <h3>Два режима игры</h3>
+    <p>Одна и та же карта и одна и та же формула обучения — Q-обучение. Разница только в «настройке любопытства»
+       агента, и у каждого режима — своя, независимая таблица Q.</p>
+    <h3>Жадность (рядом)</h3>
+    <p>ε невелико и быстро падает, бонуса за новые клетки нет, а лёгкое смещение награды тянет агента к ближайшему
+       ещё не собранному малому сокровищу. За 12 ходов агент успевает обойти все 7 малых — суммарно <b>+7</b>.</p>
+    <h3>Дальний расчёт (за стеной)</h3>
+    <p>ε выше, есть бонус за новые клетки, и заметное смещение награды ведёт агента в обход стены к большому —
+       по кратчайшему пути в обход препятствий (не по прямой: прямая линия завела бы агента в стену). Рядом с
+       проходом — ловушка (−5, конец эпизода): её агент со временем учится избегать сам, через обычное Q-обучение.
+       Награда за большое — <b>+10</b>, больше, чем всё, что можно собрать по соседству.</p>
+    <h3>Как считается</h3>
+    <p>Состояние = клетка + сколько сокровищ уже собрано в этом эпизоде.
+       Обновление: <code>Q(s,a) ← Q(s,a) + α·[r + γ·maxQ(s′) − Q(s,a)]</code>.
+       Справа — карта ценности (число, оттенок, стрелка), бары четырёх действий текущего состояния и TD-разбор с числами.</p>
+    <button id="explore-modalOk" class="eng-modal-ok">Понятно</button>
+  </div>
+</div>
+</div>
+<div id="demo-snake" class="demo-root" data-demo-key="snake">
+<div id="snake-page" class="eng-root eng-page" data-demo="snake">
+  <h1>Змейка · <span class="accent">Q-обучение</span> с таблицей</h1>
+  <p class="subtitle">32 ситуации × 3 действия = 96 ячеек памяти · справа: ситуация → код, политика, TD-разбор</p>
+
+  <div id="snake-stats" class="eng-stats"></div>
+
+  <div class="eng-row">
+    <div class="eng-cell">
+      <div class="eng-label">Игра: змейка ест яблоки</div>
+      <div class="eng-canvas-wrap"><canvas id="snake-game"></canvas></div>
+    </div>
+    <div class="eng-cell">
+      <div class="eng-label">Таблица: 32 ситуации × 3 хода</div>
+      <div class="eng-canvas-wrap"><canvas id="snake-net"></canvas></div>
+    </div>
+  </div>
+
+  <div class="eng-curve-wrap">
+    <div class="eng-label">Кривая обучения</div>
+    <canvas id="snake-curve"></canvas>
+  </div>
+
+  <div class="eng-controls">
+    <button id="snake-modeBtn" class="eng-btn">Обучение: обычное</button>
+    <button id="snake-resetBtn" class="eng-btn">Сброс</button>
+    <button id="snake-weightsBtn" class="eng-btn">Веса</button>
+    <button id="snake-infoBtn" class="eng-btn eng-btn-ghost eng-info-btn">О игре</button>
+  </div>
+
+  <p class="eng-note">Q-обучение с табличной памятью: агент помнит число для каждой пары «ситуация → действие»
+     и уточняет его после каждого шага. Подробности — в кнопке «О игре».</p>
+
+  <div id="snake-introOverlay" class="eng-intro-overlay">
+    <canvas id="snake-introCanvas" width="720" height="480"></canvas>
+  </div>
+</div>
+
+<div id="snake-modalOverlay" class="eng-modal-overlay">
+  <div class="eng-modal-box">
+    <button id="snake-modalClose" class="eng-modal-close" aria-label="Закрыть">&times;</button>
+    <h2>Змейка · Q-обучение с таблицей</h2>
+
+    <h3>Игра</h3>
+    <p>Поле 20×20. Змейка ест яблоки и растёт. Эпизод заканчивается столкновением
+       со стеной или телом, а также при лимите шагов без еды.</p>
+
+    <h3>Состояние: 3 признака → 32 ситуации</h3>
+    <ul>
+      <li><b>Опасность (3 бита)</b>: стена/тело в 1 шаге вперёд / слева / справа → 8 комбинаций.</li>
+      <li><b>Сектор еды (4)</b>: вперёд / вправо / назад / влево относительно головы.</li>
+    </ul>
+    <p>Всё считается в системе координат головы: сама голова всегда «смотрит вверх».</p>
+
+    <h3>Правая панель (3 зоны)</h3>
+    <ul>
+      <li><b>Ситуация → код</b>: кроп поля вокруг головы (повёрнут в её систему координат),
+          пиктограмма состояния (тёмные клетки = опасность, синяя стрелка = сектор еды)
+          и бары трёх действий с числами Q; пунктирная обводка = случайный ход.</li>
+      <li><b>Карта политики 8×4</b>: оттенок = ценность, стрелка = лучшее действие, число = maxQ;
+          точка = состояние ещё не посещено; чёрная рамка = текущая ситуация.</li>
+      <li><b>TD-разбор</b>: пиктограммы s → s′ с действием и наградой и формула
+          <code>Q += α·(r + γ·maxQ′ − Q)</code> с подставленными числами.</li>
+    </ul>
+
+    <h3>Награды</h3>
+    <ul>
+      <li>яблоко: <b>+1</b></li>
+      <li>смерть: <b>−10</b></li>
+      <li>шаг: <b>−0.01</b></li>
+      <li>приближение к еде: до <b>+0.1</b>, удаление: до <b>−0.1</b></li>
+      <li>γ = 0.95, α = 0.10</li>
+    </ul>
+
+    <h3>Обучение</h3>
+    <p>ε-жадная стратегия: ε от 1.0 до 0.05. Таблица обновляется после каждого шага.</p>
+
+    <button id="snake-modalOk" class="eng-modal-ok">Понятно</button>
+  </div>
+</div>
+</div>
+<div id="demo-gridworld" class="demo-root" data-demo-key="gridworld">
+<div id="gw-page" class="eng-root eng-page" data-demo="gridworld">
+  <h1>Ценность: <span class="accent">как она обновляется</span></h1>
+  <p class="subtitle">3×4 · сокровище +1 · ловушка −1 · шаг −0.1 · γ = 0.9 · Q-обучение из опыта</p>
+  <div id="gw-stats" class="eng-stats"></div>
+  <div class="eng-row">
+    <div class="eng-cell">
+      <div class="eng-label">Игра: робот идёт к цели, обходя ловушку</div>
+      <div class="eng-canvas-wrap"><canvas id="gw-game"></canvas></div>
+    </div>
+    <div class="eng-cell">
+      <div class="eng-label">Таблица: число в клетке и лучшая стрелка</div>
+      <div class="eng-canvas-wrap"><canvas id="gw-net"></canvas></div>
+    </div>
+  </div>
+  <div class="eng-controls">
+    <button id="gw-modeBtn" class="eng-btn">Пауза</button>
+    <button id="gw-resetBtn" class="eng-btn">Сброс</button>
+    <button id="gw-weightsBtn" class="eng-btn">Веса</button>
+    <button id="gw-infoBtn" class="eng-btn eng-btn-ghost eng-info-btn">О демо</button>
+  </div>
+  <p class="eng-note">Агент не знает карту заранее — учится из опыта: Q(s,a) ← Q(s,a) + α·[r + γ·maxQ(s′) − Q(s,a)]. Подробности — в кнопке «О демо».</p>
+</div>
+<div id="gw-modalOverlay" class="eng-modal-overlay">
+  <div class="eng-modal-box">
+    <button id="gw-modalClose" class="eng-modal-close" aria-label="Закрыть">&times;</button>
+    <h2>Ценность: TD / Q-обучение</h2>
+    <h3>TD / Q-learning</h3>
+    <p>Модель среды не знаем: агент ходит сам и обновляет ценность из опыта:
+       <code>Q(s,a) ← Q(s,a) + α·[ r + γ·max Q(s′) − Q(s,a) ]</code>.
+       Бары = Q четырёх действий текущего состояния; ниже — разбор обновления с числами.
+       Сокровище +1, ловушка −1, шаг −0.1, γ = 0.9.</p>
+    <button id="gw-modalOk" class="eng-modal-ok">Понятно</button>
+  </div>
+</div>
+</div>
+
+</div>
+
+<script src="assets/js/demo-weights.js"></script>
+<script src="assets/js/engine.js"></script>
+<script src="assets/js/demos/gridworld.js"></script>
+<script src="assets/js/demos/snake-dqn.js"></script>
+<script src="assets/js/demos/dino.js"></script>
+<script src="assets/js/demos/racing.js"></script>
+<script src="assets/js/demos/lander.js"></script>
+<script src="assets/js/demos/sama.js"></script>
+<script src="assets/js/demos/treasures.js"></script>
+<script src="assets/js/demos/snake.js"></script>
+<script src="assets/js/demos/explore.js"></script>
+<script src="assets/js/hub-meta.js"></script>
+<script src="assets/js/hub.js"></script>
+</body>
+</html>
