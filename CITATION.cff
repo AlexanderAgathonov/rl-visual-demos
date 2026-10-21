@@ -8,4 +8,4 @@ authors:
     affiliation: "Казанский (Приволжский) федеральный университет"
 license: MIT
 date-released: "2026-10-21"
-# repository-code: добавьте адрес репозитория после публикации
+repository-code: "https://github.com/AlexanderAgathonov/rl-visual-demos"
